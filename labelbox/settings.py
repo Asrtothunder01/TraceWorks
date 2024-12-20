@@ -25,7 +25,11 @@ SECRET_KEY = 'django-insecure-sk5l8=&zq327!ej!pv3f)ke2o3qx!knnpm^7tyusm2x0k(f-!g
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['traceworks-2.onrender.com', 'localhost']
+ALLOWED_HOSTS = [
+    'localhost',
+    '127.0.0.1',
+    'traceworks-6.onrender.com',  
+]
 
 MEDIA_URL = '/media/'
 
