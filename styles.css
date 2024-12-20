@@ -1,0 +1,45 @@
+body{
+    margin:0;
+    font-family: Arial,sans-seriff;
+    background-color: #f4f4f9;
+    color:#333
+}
+header{
+    background-color: #4CAF50;
+    color: white;
+    padding: 1 rem 0;
+    text-align: center;
+}
+
+nav h1{
+    margin: 0;
+}
+
+nav ul{
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-self: center;
+    gap: 1rem;
+}
+
+nav ul li a{
+    color: white;
+    text-decoration: none;
+}
+
+workspace{
+    margin:2rem auto;
+    width: 90%;
+    max-width: 900px;
+    background-color: white;
+    border: 1px solid #ddd;
+    box-shadow:0 4px 8px rgba(0,0,0,0,0.1);
+    padding: 1rem;
+    text-align: center;
+}
+
+#toolbar{
+    margin-bottom: 1rem;
+}
