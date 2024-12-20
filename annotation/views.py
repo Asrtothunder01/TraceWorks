@@ -19,8 +19,18 @@ def get_projects(request):
 @csrf_exempt
 def save_annotation(request):
     if request.method == 'POST':
-        data = json.loads(request.body)
-        image = get_object_or_404(Image, id=data['image_id'])  # Corrected here
-        annotation = Annotation.objects.create(image=image, data=data['annotation_data'])
-        return JsonResponse({'message': "Annotation Saved Successfully!"}, status=201)
-    return JsonResponse({"error": "Invalid request"}, status=400)
+        try:
+            data = json.loads(request.body)
+            if 'image_id' not in data or 'annotation_data' not in data:
+                return JsonResponse({'error': 'Invalid data payload'}, status=400)
+
+            image = get_object_or_404(Image, id=data['image_id'])
+            annotation = Annotation.objects.create(image=image, data=data['annotation_data'])
+            return JsonResponse({'message': "Annotation Saved Successfully!"}, status=201)
+
+        except json.JSONDecodeError:
+            return JsonResponse({'error': 'Invalid JSON format'}, status=400)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+
+    return JsonResponse({'error': 'Invalid request method'}, status=405)
