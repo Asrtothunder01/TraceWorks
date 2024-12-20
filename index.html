@@ -1,0 +1,43 @@
+<!<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="A futuristic canvas drawing and editing tool.">
+    <title>NeoCanvas</title>
+    <link rel="stylesheet" href="index.css">
+  </head>
+  <body>
+    <header>
+      <nav>
+        <h1>NeoCanvas</h1>
+        <ul>
+          <li><a href="#">Home</a></li>
+          <li><a href="#">Features</a></li>
+          <li><a href="#">About</a></li>
+        </ul>
+      </nav>
+    </header>
+    <main>
+      <section class="workspace">
+        <div class="toolbar">
+          <button id="draw" class="tool-btn">✏️ Draw</button>
+          <button id="erase" class="tool-btn">🧽 Erase</button>
+          <button id="rectangle" class="tool-btn">🔲 Rectangle</button>
+          <button id="clear" class="tool-btn">♻️ Clear</button>
+        </div>
+        <input type="file" id="image-uploader" accept="image/*" class="hidden">
+        <label for="image-uploader" class="upload-btn">📤 Upload Image</label>
+        <canvas id="canvas" width="800" height="500"></canvas>
+        <div class="actions">
+          <button id="save" class="action-btn">💾 Save</button>
+          <button id="cancel" class="action-btn">❌ Cancel</button>
+        </div>
+      </section>
+    </main>
+    <footer>
+      <p>© 2024 Redefining - Creativity | Designed by Olorunfemi<p>
+    </footer>
+    <script src="index.js"></script>
+  </body>
+</html>￼Enter

@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="A Labelbox-inspired web app for managing projects with an intuitive workspace and canvas tools.">
+    <title>Labelbox Web App</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <header>
+      <nav>
+        <div>
+          <h1>Labelbox Web App</h1>
+        </div>
+        <ul>
+          <li><a href="#">Home</a></li>
+          <li><a href="#">Projects</a></li>
+          <li><a href="#">Profile</a></li>
+        </ul>
+      </nav>
+    </header>
+    <main>
+      <div class="workspace">
+        <div id="toolbar">
+          <button id="draw" type="button" aria-label="Draw on the canvas">Draw</button>
+          <button id="erase" type="button" aria-label="Erase drawings">Erase</button>
+          <button id="rectangle" type="button" aria-label="Draw rectangles">Rectangle</button>
+          <button id="clear" type="button" aria-label="Clear canvas">Clear</button>
+        </div>
+        <input type="file" id="image-uploader" accept="image/*" aria-label="Upload an image">
+        <canvas id="canvas" width="800" height="500"></canvas>
+      </div>
+      <div class="actions">
+        <button id="save" type="button" aria-label="Save your work">Save</button>
+        <button id="cancel" type="button" aria-label="Cancel the action">Cancel</button>
+      </div>
+    </main>
+    <footer>
+      <p>© 2024 Labelbox Web App | Designed by Olorunfemi</p>
+    </footer>
+    <script src="script.js"></script>
+  </body>
+    </html>
