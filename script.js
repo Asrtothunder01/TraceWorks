@@ -1,17 +1,18 @@
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
+const imageUploader = document.getElementById('image-uploader');
 
 let isDrawing = false;
-let tool = 'draw'; // Default tool
+let tool = 'draw'; 
 let startX, startY;
 
-// Event Listeners for Mouse
+
 canvas.addEventListener('mousedown', startDrawing);
 canvas.addEventListener('mousemove', draw);
 canvas.addEventListener('mouseup', stopDrawing);
 canvas.addEventListener('mouseout', stopDrawing);
 
-// Event Listeners for Touch
+// Touch for Mobile
 canvas.addEventListener('touchstart', startTouchDrawing);
 canvas.addEventListener('touchmove', drawTouch);
 canvas.addEventListener('touchend', stopDrawing);
@@ -20,8 +21,12 @@ document.getElementById('draw').addEventListener('click', () => (tool = 'draw'))
 document.getElementById('erase').addEventListener('click', () => (tool = 'erase'));
 document.getElementById('rectangle').addEventListener('click', () => (tool = 'rectangle'));
 document.getElementById('clear').addEventListener('click', clearCanvas);
+document.getElementById('save').addEventListener('click', saveCanvas);
 
-// Functions for Mouse Drawing
+// Image Upload Event
+imageUploader.addEventListener('change', uploadImage);
+
+
 function startDrawing(e) {
   isDrawing = true;
   startX = e.offsetX;
@@ -40,17 +45,33 @@ function draw(e) {
 
   if (tool === 'draw') {
     ctx.lineTo(x, y);
-    ctx.strokeStyle = '#000'; 
+    ctx.strokeStyle = '#000'; // Black color
     ctx.lineWidth = 2;
     ctx.stroke();
   } else if (tool === 'erase') {
-    ctx.clearRect(x - 5, y - 5, 10, 10); // Erase with a small square
+    ctx.clearRect(x - 5, y - 5, 10, 10); // Small square for erasing
+  } else if (tool === 'rectangle') {
+    // Prevent drawing rectangles during drag
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.strokeRect(startX, startY, x - startX, y - startY);
   }
 }
 
-// Functions for Touch Drawing
+function stopDrawing(e) {
+  if (isDrawing && tool === 'rectangle') {
+    const x = e.offsetX;
+    const y = e.offsetY;
+
+    // Draw final rectangle
+    ctx.strokeStyle = '#000'; // Black color
+    ctx.lineWidth = 2;
+    ctx.strokeRect(startX, startY, x - startX, y - startY);
+  }
+  isDrawing = false;
+}
+
 function startTouchDrawing(e) {
-  e.preventDefault(); 
+  e.preventDefault(); // Prevent scrolling
   const touch = e.touches[0];
   const rect = canvas.getBoundingClientRect();
   startX = touch.clientX - rect.left;
@@ -66,7 +87,7 @@ function startTouchDrawing(e) {
 
 function drawTouch(e) {
   if (!isDrawing) return;
-  e.preventDefault(); // Prevent scrolling while drawing
+  e.preventDefault();
 
   const touch = e.touches[0];
   const rect = canvas.getBoundingClientRect();
@@ -75,20 +96,39 @@ function drawTouch(e) {
 
   if (tool === 'draw') {
     ctx.lineTo(x, y);
-    ctx.strokeStyle = '#000'; // Black color for drawing
+    ctx.strokeStyle = '#000';
     ctx.lineWidth = 2;
     ctx.stroke();
   } else if (tool === 'erase') {
-    ctx.clearRect(x - 5, y - 5, 10, 10); // Erase with a small square
+    ctx.clearRect(x - 5, y - 5, 10, 10);
   }
 }
 
-// Stop Drawing (Shared for Mouse and Touch)
-function stopDrawing() {
-  isDrawing = false;
-}
-
-// Clear Canvas
 function clearCanvas() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-                        }￼Enter
+}
+
+function saveCanvas() {
+  const link = document.createElement('a');
+  link.download = 'canvas-image.png'; // Set default file name
+  link.href = canvas.toDataURL('image/png'); // Convert canvas to image
+  link.click();
+}
+
+function uploadImage(e) {
+  const file = e.target.files[0];
+  const reader = new FileReader();
+
+  reader.onload = function (event) {
+    const img = new Image();
+    img.onload = function () {
+      ctx.clearRect(0, 0, canvas.width, canvas.height); 
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    };
+    img.src = event.target.result;
+  };
+
+  if (file) {
+    reader.readAsDataURL(file); 
+  }
+}
