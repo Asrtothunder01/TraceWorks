@@ -1,1 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TraceWork</title>
+  <link rel="stylesheet" href="trace.css">
+</head>
+<body>
+  <div class="app">
+    <!-- Whiteboard Area -->
+    <canvas class="whiteboard" id="whiteboard"></canvas>
+
+    <!-- Toolbar -->
+    <footer class="toolbar">
+      <button class="tool-btn" id="pen-tool" title="Pen">
+        <img src="pencil.png" alt="Pen">
+        <span>Pen</span>
+      </button>
+      <button class="tool-btn" id="eraser-tool" title="Eraser">
+        <img src="2661282.png" alt="Eraser">
+        <span>Eraser</span>
+      </button>
+      <button class="tool-btn" id="save-tool" title="Save">
+        <img src="inbox(1).png" alt="Save">
+        <span>Save</span>
+      </button>
+      <button class="tool-btn" id="share-tool" title="Share">
+        <img src="send(1).png" alt="Share">
+        <span>Share</span>
+      </button>
+      <button class="tool-btn" id="more-tool" title="More">
+        <img src="menu.png" alt="More">
+        <span>More</span>
+      </button>
+    </footer>
+  </div>
+
+  <!-- Modal for More Tools -->
+  <div id="more-modal" class="modal hidden">
+    <div class="modal-content">
+      <span class="close-btn" id="close-modal">&times;</span>
+      <h2>More Tools</h2>
+      <button id="magic-wand-tool">
+        <img src="magic-wand.png" alt="Magic Wand" style="width: 70px;height: 50;object-fit: contain">
+        <span>Magic Wand</span>
+      </button>
+      <label for="color-picker">
+        <span>Choose a color</span>
+        <input type="color" id="color-picker" title="Choose a Color">
+      </label>
+      <button id="animation">
+        <img src="start-button.png" alt="Animation" style="height: 50px; width: 50px; object-fit: contain">
+        <span>Start Animation</span>
+      </button>
+      <button id="stop-animation">
+        <img src="stop(1).png" alt="Stop animation" style="height: 50px;width:50px;object-fit: contain ">
+        <span>Stop Animation</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <script src="trace.js"></script>
+</body>
+</html>
+
 
