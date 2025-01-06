@@ -108,14 +108,15 @@ body.dark-theme {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  background: linear-gradient(135deg, #6a11cb, #2575fc);
+  background-color: #333333; /* Updated background color */
+  border: 2px solid #ccc;
   border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
   padding: 20px;
   width: 85%;
   max-width: 400px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+  color: #ffffff;
   z-index: 1000;
-  color: white;
 }
 
 .modal-content {
@@ -231,8 +232,6 @@ body.dark-theme {
   }
 }
 
-
-
 #onboarding-overlay {
   position: fixed;
   top: 0;
@@ -262,4 +261,4 @@ body.dark-theme {
   50% {
     transform: translateY(-10px);
   }
-}
+  }
