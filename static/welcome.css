@@ -1,11 +1,15 @@
 /* Base styles */
 body {
   margin: 0;
-  font-family: 'Poppins', sans-serif;
-  background: linear-gradient(120deg, #0f2027, #203a43, #2c5364);
+  font-family: 'Orbitron', sans-serif;
+  background: radial-gradient(circle, #1a1a1a, #000000);
   color: #ffffff;
   overflow-x: hidden;
-  transition: background 0.5s ease;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
 }
 
 h1, h2, p {
@@ -18,112 +22,125 @@ a {
   color: inherit;
 }
 
-/* Header styles */
+/* Header */
 header {
   text-align: center;
-  padding: 40px 20px;
-  background: rgba(255, 255, 255, 0.1);
-  border-bottom: 2px solid rgba(255, 255, 255, 0.2);
-  backdrop-filter: blur(10px);
-  animation: slideDown 1.2s ease-in-out;
+  padding: 50px 20px;
+  position: relative;
+  z-index: 1;
+  animation: fadeInScale 1.5s ease-in-out forwards;
 }
 
 header h1 {
-  font-size: 3rem;
-  font-weight: bold;
-  background: linear-gradient(to right, #ff416c, #ff4b2b);
+  font-size: 4rem;
+  font-weight: 800;
+  letter-spacing: 2px;
+  background: linear-gradient(to right, #ff007a, #8f00ff);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+  text-shadow: 0 0 15px rgba(255, 0, 122, 0.8), 0 0 25px rgba(143, 0, 255, 0.6);
+  animation: neonPulse 2s infinite alternate;
 }
 
 header p {
   font-size: 1.2rem;
-  margin-top: 10px;
-  color: #dddddd;
+  margin-top: 15px;
+  color: #e0e0e0;
+  animation: fadeIn 2s ease-in-out forwards;
 }
 
-/* Main content */
+/* Main */
 main {
-  padding: 20px;
   text-align: center;
-}
-
-.description {
-  margin-bottom: 40px;
+  margin: 20px 0;
 }
 
 .description h2 {
-  font-size: 2rem;
-  margin-bottom: 10px;
-  color: #50c878;
+  font-size: 2.5rem;
+  color: #1affd5;
+  text-transform: uppercase;
+  text-shadow: 0 0 10px #1affd5, 0 0 30px #1affd5;
+  margin-bottom: 15px;
 }
 
 .description p {
   font-size: 1.1rem;
-  color: #cccccc;
+  line-height: 1.8;
+  color: #cfcfcf;
+  max-width: 800px;
+  margin: 0 auto;
 }
 
-/* Call-to-action button */
+/* Button */
 .btn {
   display: inline-block;
-  padding: 15px 30px;
+  margin-top: 20px;
+  padding: 15px 40px;
   font-size: 1.2rem;
-  font-weight: bold;
+  text-transform: uppercase;
   color: #ffffff;
-  background: linear-gradient(90deg, #ff8c00, #ff2e63);
+  background: linear-gradient(90deg, #ff8c00, #ff2e63, #7a00ff);
   border: none;
   border-radius: 50px;
   cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0px 4px 20px rgba(255, 46, 99, 0.5);
+  transition: all 0.3s ease-in-out;
+  box-shadow: 0 5px 15px rgba(255, 46, 99, 0.5);
+  animation: buttonHoverGlow 3s infinite ease-in-out;
 }
 
 .btn:hover {
   transform: scale(1.1);
-  box-shadow: 0px 6px 30px rgba(255, 46, 99, 0.7);
+  box-shadow: 0 10px 30px rgba(255, 46, 99, 0.8);
+  background: linear-gradient(270deg, #ff8c00, #ff2e63, #7a00ff);
 }
 
-/* Footer styles */
+/* Footer */
 footer {
   text-align: center;
   padding: 20px 0;
-  background: rgba(255, 255, 255, 0.1);
-  border-top: 2px solid rgba(255, 255, 255, 0.2);
-  backdrop-filter: blur(10px);
-}
-
-footer p {
   font-size: 0.9rem;
-  color: #aaaaaa;
+  color: #b0b0b0;
+  background: rgba(255, 255, 255, 0.05);
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
 }
 
-/* Animation */
-@keyframes slideDown {
-  0% {
-    transform: translateY(-100px);
+/* Particle Canvas */
+#particleCanvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1; /* Keep it behind other elements */
+  pointer-events: none; /* Ensure it doesn’t block user interactions */
+}
+
+/* Keyframe Animations */
+@keyframes fadeInScale {
+  from {
     opacity: 0;
+    transform: scale(0.8);
   }
-  100% {
-    transform: translateY(0);
+  to {
     opacity: 1;
+    transform: scale(1);
   }
 }
 
-/* Responsive design */
-@media (max-width: 768px) {
-  header h1 {
-    font-size: 2rem;
+@keyframes neonPulse {
+  from {
+    text-shadow: 0 0 15px rgba(255, 0, 122, 0.8), 0 0 25px rgba(143, 0, 255, 0.6);
   }
-
-  header p {
-    font-size: 1rem;
+  to {
+    text-shadow: 0 0 25px rgba(255, 0, 122, 1), 0 0 40px rgba(143, 0, 255, 0.8);
   }
+}
 
-  .description h2 {
-    font-size: 1.5rem;
+@keyframes buttonHoverGlow {
+  0%, 100% {
+    box-shadow: 0 5px 15px rgba(255, 46, 99, 0.5);
   }
-
-  .btn {
-    padding: 10px 20px;
-    font-size: 1rem;
+  50% {
+    box-shadow: 0 10px 30px rgba(255, 46, 99, 0.8);
+  }
   }
