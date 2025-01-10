@@ -9,52 +9,61 @@
 </head>
 <body>
   <div class="app">
-    <canvas class="whiteboard" id="whiteboard"></canvas>
-    <footer class="toolbar">
-      <button class="tool-btn" id="pen-tool" title="Pen">
+    <!-- Canvas for the whiteboard -->
+    <canvas class="whiteboard" id="whiteboard" aria-label="Drawing canvas"></canvas>
+
+    <!-- Toolbar at the footer -->
+    <footer class="toolbar" aria-label="Toolbar with tools">
+      <button class="tool-btn" id="pen-tool" title="Pen" aria-label="Pen tool">
         <img src="{% static 'pencil.png' %}" alt="Pen">
         <span>Pen</span>
       </button>
-      <button class="tool-btn" id="eraser-tool" title="Eraser">
+      <button class="tool-btn" id="eraser-tool" title="Eraser" aria-label="Eraser tool">
         <img src="{% static 'eraser.png' %}" alt="Eraser">
         <span>Eraser</span>
       </button>
-      <button class="tool-btn" id="save-tool" title="Save">
+      <button class="tool-btn" id="save-tool" title="Save" aria-label="Save drawing">
         <img src="{% static 'inbox(1).png' %}" alt="Save">
         <span>Save</span>
       </button>
-      <button class="tool-btn" id="share-tool" title="Share">
+      <button class="tool-btn" id="share-tool" title="Share" aria-label="Share drawing">
         <img src="{% static 'send(1).png' %}" alt="Share">
         <span>Share</span>
       </button>
-      <button class="tool-btn" id="more-tool" title="More">
+      <button class="tool-btn" id="more-tool" title="More" aria-label="More tools">
         <img src="{% static 'menu.png' %}" alt="More">
         <span>More</span>
       </button>
     </footer>
   </div>
-  <div id="more-modal" class="modal hidden">
+
+  <!-- Modal for additional tools -->
+  <div id="more-modal" class="modal hidden" aria-hidden="true" role="dialog" aria-labelledby="modal-title">
     <div class="modal-content">
-      <span class="close-btn" id="close-modal">&times;</span>
-      <h2>More Tools</h2>
-      <button id="magic-wand-tool">
-        <img src="{% static 'magic-wand.png' %}" alt="Magic Wand" style="width: 70px;height: 50px;object-fit: contain">
-        <span>Magic Wand</span>
-      </button>
-      <label for="color-picker">
-        <span>Choose a color</span>
-        <input type="color" id="color-picker" title="Choose a Color">
-      </label>
-      <button id="animation">
-        <img src="{% static 'start-button.png' %}" alt="Animation" style="height: 50px; width: 50px; object-fit: contain">
-        <span>Start Animation</span>
-      </button>
-      <button id="stop-animation">
-        <img src="{% static 'stop(1).png' %}" alt="Stop animation" style="height: 50px;width:50px;object-fit: contain">
-        <span>Stop Animation</span>
-      </button>
+      <button class="close-btn" id="close-modal" aria-label="Close modal">&times;</button>
+      <h2 id="modal-title">More Tools</h2>
+      <div class="modal-tools">
+        <button id="magic-wand-tool" class="modal-tool" aria-label="Magic Wand tool">
+          <img src="{% static 'magic-wand.png' %}" alt="Magic Wand" style="width: 70px;height: 50px;object-fit: contain">
+          <span>Magic Wand</span>
+        </button>
+        <label for="color-picker" class="modal-tool" aria-label="Choose a color">
+          <span>Choose a color</span>
+          <input type="color" id="color-picker" title="Choose a Color">
+        </label>
+        <button id="animation" class="modal-tool" aria-label="Start animation">
+          <img src="{% static 'start-button.png' %}" alt="Animation" style="height: 50px; width: 50px; object-fit: contain">
+          <span>Start Animation</span>
+        </button>
+        <button id="stop-animation" class="modal-tool" aria-label="Stop animation">
+          <img src="{% static 'stop(1).png' %}" alt="Stop animation" style="height: 50px;width:50px;object-fit: contain">
+          <span>Stop Animation</span>
+        </button>
+      </div>
     </div>
   </div>
+
+  <!-- JavaScript dependencies -->
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
   <script src="{% static 'trace.js' %}"></script>
 </body>

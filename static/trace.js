@@ -1,135 +1,255 @@
-// Constants
-const CONSTANTS = {
-  DEFAULT_LINE_WIDTH: 2,
-  ERASER_WIDTH: 20,
-  ANIMATION_INTERVAL: 100,
-  MAX_HISTORY: 50,
-  DEBOUNCE_DELAY: 250,
-  MIN_LINE_WIDTH: 1,
-  MAX_LINE_WIDTH: 50,
-};
-
-// Utility Functions
-const debounce = (func, wait) => {
-  let timeout;
-  return (...args) => {
-    clearTimeout(timeout);
-    timeout = setTimeout(() => func(...args), wait);
-  };
-};
-
-// State management
+// Whiteboard State
 const state = {
   ctx: null,
   isDrawing: false,
   lastX: 0,
   lastY: 0,
-  currentTool: "pen",
-  currentColor: "#000000",
-  currentLineWidth: CONSTANTS.DEFAULT_LINE_WIDTH,
   history: [],
-  currentStep: -1,
-  maxHistory: CONSTANTS.MAX_HISTORY,
-  modalOpen: false,
-  animationActive: false,
+  maxHistory: 10,
+  lineWidth: 5,
+  strokeStyle: "#000000",
   animationInterval: null,
-  magicWandActive: false,
+  eraserMode: false,
+  defaultLineWidth: 5,
+  eraserLineWidth: 20,
+  magicWandSelection: null, // Store selection mask
 };
 
-// Canvas Operations
-const initializeCanvas = () => {
+// Initialize the whiteboard
+const initializeWhiteboard = () => {
   const whiteboard = document.getElementById("whiteboard");
-  if (!whiteboard || !whiteboard.getContext) {
-    alert("Canvas not supported in this browser.");
-    return false;
+  if (!whiteboard) {
+    console.error("Whiteboard canvas not found.");
+    return;
   }
 
+  // Set canvas size
   whiteboard.width = whiteboard.offsetWidth;
   whiteboard.height = whiteboard.offsetHeight;
 
+  // Initialize context
   state.ctx = whiteboard.getContext("2d");
+  if (!state.ctx) {
+    console.error("Failed to initialize canvas context.");
+    return;
+  }
+
+  // Set initial styles
   updateContextStyle();
-  return true;
-};
 
-const updateContextStyle = () => {
-  const { ctx, currentTool, currentColor, currentLineWidth } = state;
-  if (!ctx) return;
-
-  ctx.strokeStyle = currentTool === "pen" ? currentColor : "#FFFFFF";
-  ctx.lineWidth = currentLineWidth;
-  ctx.lineCap = "round";
-  ctx.lineJoin = "round";
-  ctx.globalCompositeOperation =
-    currentTool === "eraser" ? "destination-out" : "source-over";
-};
-
-// Magic Wand Tool - Clears the Board
-const toggleMagicWand = () => {
-  state.magicWandActive = !state.magicWandActive;
-
-  if (state.magicWandActive) {
-    alert("Magic Wand Tool Activated! The board will be cleared.");
-
-    const whiteboard = document.getElementById("whiteboard");
-    const ctx = whiteboard.getContext("2d");
-
-    whiteboard.addEventListener("click", () => {
-      if (!state.magicWandActive) return;
-
-      // Clear the entire canvas
-      ctx.clearRect(0, 0, whiteboard.width, whiteboard.height);
-    });
-  } else {
-    alert("Magic Wand Tool Deactivated!");
-  }
-};
-
-// Animation Functions
-const startCustomAnimation = () => {
-  if (state.animationActive) return;
-  state.animationActive = true;
-
-  const whiteboard = document.getElementById("whiteboard");
-  const ctx = whiteboard.getContext("2d");
-
-  state.animationInterval = setInterval(() => {
-    // Example: Draw a bouncing circle as an animation
-    const time = Date.now() / 1000;
-    const x = Math.sin(time) * 100 + whiteboard.width / 2;
-    const y = Math.cos(time) * 100 + whiteboard.height / 2;
-
-    ctx.clearRect(0, 0, whiteboard.width, whiteboard.height); // Clear the canvas
-    ctx.beginPath();
-    ctx.arc(x, y, 50, 0, Math.PI * 2);
-    ctx.fillStyle = "#FF0000"; // Red color
-    ctx.fill();
-    ctx.closePath();
-  }, CONSTANTS.ANIMATION_INTERVAL);
-};
-
-const stopAnimation = () => {
-  if (state.animationInterval) {
-    clearInterval(state.animationInterval);
-    state.animationInterval = null;
-  }
-  state.animationActive = false;
-};
-
-// Initialization
-const initialize = () => {
-  if (!initializeCanvas()) return;
-
+  // Attach listeners
   attachDrawingListeners();
-
-  document.getElementById("pen-tool").addEventListener("click", () => switchTool("pen"));
-  document.getElementById("eraser-tool").addEventListener("click", () => switchTool("eraser"));
-  document.getElementById("color-picker").addEventListener("input", (e) => setColor(e.target.value));
-  document.getElementById("line-width").addEventListener("change", (e) => setLineWidth(Number(e.target.value)));
-
-  document.getElementById("magic-wand-tool").addEventListener("click", toggleMagicWand);
-  document.getElementById("animation").addEventListener("click", startCustomAnimation);
-  document.getElementById("stop-animation").addEventListener("click", stopAnimation);
+  addResizeListener();
+  attachModalControls();
+  attachMoreToolsListeners();
+  attachMainToolsListeners();
 };
 
-window.onload = initialize;
+// Update drawing context styles
+const updateContextStyle = () => {
+  const { ctx, lineWidth, strokeStyle } = state;
+  ctx.lineWidth = lineWidth;
+  ctx.lineCap = "round";
+  ctx.strokeStyle = strokeStyle;
+};
+
+// Attach main tools listeners
+const attachMainToolsListeners = () => {
+  // Pen Tool
+  document.getElementById("pen-tool").addEventListener("click", () => {
+    toggleEraser(false);
+    document.getElementById("pen-tool").classList.add("active");
+    document.getElementById("eraser-tool").classList.remove("active");
+  });
+
+  // Eraser Tool
+  document.getElementById("eraser-tool").addEventListener("click", () => {
+    toggleEraser(true);
+    document.getElementById("eraser-tool").classList.add("active");
+    document.getElementById("pen-tool").classList.remove("active");
+  });
+
+  // Save Tool
+  document.getElementById("save-tool").addEventListener("click", () => {
+    const whiteboard = document.getElementById("whiteboard");
+    const dataUrl = whiteboard.toDataURL("image/png");
+    const link = document.createElement("a");
+    link.download = "whiteboard-drawing.png";
+    link.href = dataUrl;
+    link.click();
+  });
+
+  // Share Tool
+  document.getElementById("share-tool").addEventListener("click", () => {
+    const whiteboard = document.getElementById("whiteboard");
+    whiteboard.toBlob((blob) => {
+      const file = new File([blob], "whiteboard-drawing.png", { type: "image/png" });
+      if (navigator.share) {
+        navigator
+          .share({
+            files: [file],
+            title: "Whiteboard Drawing",
+            text: "Check out my whiteboard drawing!",
+          })
+          .catch(console.error);
+      } else {
+        alert("Sharing is not supported on this browser. You can save the drawing instead!");
+      }
+    });
+  });
+};
+
+// Toggle between pen and eraser
+const toggleEraser = (isEraser) => {
+  state.eraserMode = isEraser;
+  state.ctx.lineWidth = isEraser ? state.eraserLineWidth : state.defaultLineWidth;
+  state.ctx.strokeStyle = isEraser ? "#FFFFFF" : state.strokeStyle;
+};
+
+// Save the current canvas state to history
+const saveToHistory = () => {
+  const whiteboard = document.getElementById("whiteboard");
+  if (state.history.length >= state.maxHistory) state.history.shift();
+  state.history.push(whiteboard.toDataURL());
+};
+
+// Attach drawing listeners
+const attachDrawingListeners = () => {
+  const whiteboard = document.getElementById("whiteboard");
+
+  const startDrawing = (e) => {
+    e.preventDefault();
+    const { offsetX, offsetY } = getEventOffset(e);
+    state.isDrawing = true;
+    state.lastX = offsetX;
+    state.lastY = offsetY;
+  };
+
+  const draw = (e) => {
+    e.preventDefault();
+    if (!state.isDrawing) return;
+
+    const { offsetX, offsetY } = getEventOffset(e);
+    const { ctx } = state;
+
+    if (!ctx) {
+      console.error("Drawing context is not initialized.");
+      return;
+    }
+
+    ctx.beginPath();
+    ctx.moveTo(state.lastX, state.lastY);
+    ctx.lineTo(offsetX, offsetY);
+    ctx.stroke();
+
+    state.lastX = offsetX;
+    state.lastY = offsetY;
+  };
+
+  const stopDrawing = (e) => {
+    e.preventDefault();
+    if (!state.isDrawing) return;
+
+    state.isDrawing = false;
+    saveToHistory(); // Save canvas state to history
+  };
+
+  const getEventOffset = (e) => {
+    const rect = whiteboard.getBoundingClientRect();
+    if (e.touches && e.touches[0]) {
+      const touch = e.touches[0];
+      return {
+        offsetX: touch.clientX - rect.left,
+        offsetY: touch.clientY - rect.top,
+      };
+    }
+    return {
+      offsetX: e.offsetX,
+      offsetY: e.offsetY,
+    };
+  };
+
+  whiteboard.addEventListener("mousedown", startDrawing);
+  whiteboard.addEventListener("mousemove", draw);
+  whiteboard.addEventListener("mouseup", stopDrawing);
+  whiteboard.addEventListener("mouseleave", stopDrawing);
+
+  // For touch devices
+  whiteboard.addEventListener("touchstart", startDrawing);
+  whiteboard.addEventListener("touchmove", draw);
+  whiteboard.addEventListener("touchend", stopDrawing);
+};
+
+// Resize canvas dynamically
+const addResizeListener = () => {
+  const whiteboard = document.getElementById("whiteboard");
+  window.addEventListener("resize", () => {
+    const oldData = whiteboard.toDataURL();
+    whiteboard.width = whiteboard.offsetWidth;
+    whiteboard.height = whiteboard.offsetHeight;
+    updateContextStyle();
+
+    // Restore previous drawing
+    const img = new Image();
+    img.onload = () => state.ctx.drawImage(img, 0, 0);
+    img.src = oldData;
+  });
+};
+
+// Modal controls for additional tools
+const attachModalControls = () => {
+  const moreToolButton = document.getElementById("more-tool");
+  const closeModalButton = document.getElementById("close-modal");
+  const modal = document.getElementById("more-modal");
+
+  // Show the modal when the "More" button is clicked
+  moreToolButton.addEventListener("click", () => {
+    modal.classList.remove("hidden");
+    modal.setAttribute("aria-hidden", "false");
+  });
+
+  // Close the modal when the close button is clicked
+  closeModalButton.addEventListener("click", () => {
+    modal.classList.add("hidden");
+    modal.setAttribute("aria-hidden", "true");
+  });
+
+  // Optional: Close the modal if the user clicks outside of it
+  window.addEventListener("click", (e) => {
+    if (e.target === modal) {
+      modal.classList.add("hidden");
+      modal.setAttribute("aria-hidden", "true");
+    }
+  });
+};
+
+// Attach listeners for additional tools (e.g., Magic Wand, Color Picker, etc.)
+const attachMoreToolsListeners = () => {
+  // Magic Wand Tool
+  document.getElementById("magic-wand-tool").addEventListener("click", () => {
+    alert("Magic Wand Tool activated!");
+  });
+
+  // Color Picker Tool
+  document.getElementById("color-picker").addEventListener("input", (e) => {
+    state.strokeStyle = e.target.value;
+    if (!state.eraserMode) {
+      updateContextStyle();
+    }
+  });
+
+  // Animation Start Button
+  document.getElementById("animation").addEventListener("click", () => {
+    alert("Animation started!");
+  });
+
+  // Animation Stop Button
+  document.getElementById("stop-animation").addEventListener("click", () => {
+    alert("Animation stopped!");
+  });
+};
+
+// Initialize the application
+window.onload = () => {
+  initializeWhiteboard();
+};
