@@ -1,255 +1,192 @@
-// Whiteboard State
-const state = {
-  ctx: null,
-  isDrawing: false,
-  lastX: 0,
-  lastY: 0,
-  history: [],
-  maxHistory: 10,
-  lineWidth: 5,
-  strokeStyle: "#000000",
-  animationInterval: null,
-  eraserMode: false,
-  defaultLineWidth: 5,
-  eraserLineWidth: 20,
-  magicWandSelection: null, // Store selection mask
-};
+// DOM Elements
+const canvas = document.getElementById('whiteboard');
+const context = canvas.getContext('2d');
+const toolbar = document.querySelector('.toolbar');
+const modal = document.getElementById('more-modal');
+const openModalBtn = document.getElementById('more-tool');
+const closeModalBtn = document.getElementById('close-modal');
+const colorPicker = document.getElementById('color-picker');
+const startAnimationBtn = document.getElementById('animation');
+const stopAnimationBtn = document.getElementById('stop-animation');
+const magicWandBtn = document.getElementById('magic-wand-tool');
 
-// Attach drawing listeners
-const attachDrawingListeners = () => {
-  const whiteboard = document.getElementById("whiteboard");
+// State
+let isDrawing = false;
+let currentTool = 'pen';
+let currentColor = '#000000';
+let currentLineWidth = 2;
+let animationFrameId = null;
 
-  const startDrawing = (e) => {
-    e.preventDefault();
-    const { offsetX, offsetY } = getEventOffset(e);
-    state.isDrawing = true;
-    state.lastX = offsetX;
-    state.lastY = offsetY;
-  };
+// Setup Canvas Dimensions
+function setCanvasSize() {
+  canvas.width = window.innerWidth * 0.9;
+  canvas.height = window.innerHeight * 0.8;
+}
+setCanvasSize();
+window.addEventListener('resize', setCanvasSize);
 
-  const draw = (e) => {
-    e.preventDefault();
-    if (!state.isDrawing) return;
-
-    const { offsetX, offsetY } = getEventOffset(e);
-    const { ctx } = state;
-
-    if (!ctx) {
-      console.error("Drawing context is not initialized.");
-      return;
-    }
-
-    ctx.beginPath();
-    ctx.moveTo(state.lastX, state.lastY);
-    ctx.lineTo(offsetX, offsetY);
-    ctx.stroke();
-
-    state.lastX = offsetX;
-    state.lastY = offsetY;
-  };
-
-  const stopDrawing = (e) => {
-    e.preventDefault();
-    if (!state.isDrawing) return;
-
-    state.isDrawing = false;
-    saveToHistory(); // Save canvas state to history
-  };
-
-  const getEventOffset = (e) => {
-    const rect = whiteboard.getBoundingClientRect();
-    if (e.touches && e.touches[0]) {
-      const touch = e.touches[0];
-      return {
-        offsetX: touch.clientX - rect.left,
-        offsetY: touch.clientY - rect.top,
-      };
-    }
+// Helper to Get Event Coordinates for Mouse and Touch
+function getEventCoordinates(event) {
+  if (event.touches) {
+    const rect = canvas.getBoundingClientRect();
     return {
-      offsetX: e.offsetX,
-      offsetY: e.offsetY,
+      x: event.touches[0].clientX - rect.left,
+      y: event.touches[0].clientY - rect.top,
     };
-  };
-
-  whiteboard.addEventListener("mousedown", startDrawing);
-  whiteboard.addEventListener("mousemove", draw);
-  whiteboard.addEventListener("mouseup", stopDrawing);
-  whiteboard.addEventListener("mouseleave", stopDrawing);
-
-  // For touch devices
-  whiteboard.addEventListener("touchstart", startDrawing);
-  whiteboard.addEventListener("touchmove", draw);
-  whiteboard.addEventListener("touchend", stopDrawing);
-};
-
-// Initialize the whiteboard
-const initializeWhiteboard = () => {
-  const whiteboard = document.getElementById("whiteboard");
-  if (!whiteboard) {
-    console.error("Whiteboard canvas not found.");
-    return;
   }
+  return { x: event.offsetX, y: event.offsetY };
+}
 
-  // Set canvas size
-  whiteboard.width = whiteboard.offsetWidth;
-  whiteboard.height = whiteboard.offsetHeight;
+// Drawing Functions
+function startDrawing(event) {
+  isDrawing = true;
+  const { x, y } = getEventCoordinates(event);
+  context.beginPath();
+  context.moveTo(x, y);
+  event.preventDefault(); // Prevent touch scrolling
+}
 
-  // Initialize context
-  state.ctx = whiteboard.getContext("2d");
-  if (!state.ctx) {
-    console.error("Failed to initialize canvas context.");
-    return;
+function draw(event) {
+  if (!isDrawing) return;
+
+  const { x, y } = getEventCoordinates(event);
+  if (currentTool === 'pen') {
+    context.strokeStyle = currentColor;
+    context.lineWidth = currentLineWidth;
+    context.lineCap = 'round';
+    context.lineJoin = 'round';
+    context.lineTo(x, y);
+    context.stroke();
+  } else if (currentTool === 'eraser') {
+    context.strokeStyle = '#ffffff';
+    context.lineWidth = 20; // Eraser size
+    context.lineCap = 'round';
+    context.lineJoin = 'round';
+    context.lineTo(x, y);
+    context.stroke();
   }
+  event.preventDefault(); // Prevent touch scrolling
+}
 
-  // Set initial styles
-  updateContextStyle();
+function stopDrawing(event) {
+  if (isDrawing) {
+    context.closePath();
+    isDrawing = false;
+  }
+  event.preventDefault(); // Prevent touch scrolling
+}
 
-  // Attach listeners
-  attachDrawingListeners();
-  addResizeListener();
-  attachModalControls();
-  attachMoreToolsListeners();
-  attachMainToolsListeners();
-};
+// Tool Selection
+toolbar.addEventListener('click', (event) => {
+  const toolBtn = event.target.closest('.tool-btn');
+  if (!toolBtn) return;
 
-// Update drawing context styles
-const updateContextStyle = () => {
-  const { ctx, lineWidth, strokeStyle } = state;
-  ctx.lineWidth = lineWidth;
-  ctx.lineCap = "round";
-  ctx.strokeStyle = strokeStyle;
-};
+  // Remove active state from all buttons
+  document.querySelectorAll('.tool-btn').forEach((btn) => btn.classList.remove('active'));
 
-// Attach main tools listeners
-const attachMainToolsListeners = () => {
-  // Pen Tool
-  document.getElementById("pen-tool").addEventListener("click", () => {
-    toggleEraser(false);
-    document.getElementById("pen-tool").classList.add("active");
-    document.getElementById("eraser-tool").classList.remove("active");
-  });
+  // Set the active tool
+  toolBtn.classList.add('active');
+  currentTool = toolBtn.id === 'pen-tool' ? 'pen' :
+                toolBtn.id === 'eraser-tool' ? 'eraser' : currentTool;
 
-  // Eraser Tool
-  document.getElementById("eraser-tool").addEventListener("click", () => {
-    toggleEraser(true);
-    document.getElementById("eraser-tool").classList.add("active");
-    document.getElementById("pen-tool").classList.remove("active");
-  });
+  if (currentTool === 'save-tool') saveCanvas();
+  if (currentTool === 'share-tool') shareCanvas();
+});
 
-  // Save Tool
-  document.getElementById("save-tool").addEventListener("click", () => {
-    const whiteboard = document.getElementById("whiteboard");
-    const dataUrl = whiteboard.toDataURL("image/png");
-    const link = document.createElement("a");
-    link.download = "whiteboard-drawing.png";
-    link.href = dataUrl;
+// Save the Canvas as an Image
+function saveCanvas() {
+  html2canvas(canvas).then((canvasImage) => {
+    const link = document.createElement('a');
+    link.download = 'whiteboard.png';
+    link.href = canvasImage.toDataURL();
     link.click();
   });
+}
 
-  // Share Tool
-  document.getElementById("share-tool").addEventListener("click", () => {
-    const whiteboard = document.getElementById("whiteboard");
-    whiteboard.toBlob((blob) => {
-      const file = new File([blob], "whiteboard-drawing.png", { type: "image/png" });
-      if (navigator.share) {
-        navigator
-          .share({
-            files: [file],
-            title: "Whiteboard Drawing",
-            text: "Check out my whiteboard drawing!",
-          })
-          .catch(console.error);
-      } else {
-        alert("Sharing is not supported on this browser. You can save the drawing instead!");
-      }
-    });
-  });
-};
+// Share Canvas (Dummy Example)
+function shareCanvas() {
+  alert('Sharing feature coming soon!');
+}
 
-// Toggle between pen and eraser
-const toggleEraser = (isEraser) => {
-  state.eraserMode = isEraser;
-  state.ctx.lineWidth = isEeraser ? state.eraserLineWidth : state.defaultLineWidth;
-  state.ctx.strokeStyle = isEraser ? "#FFFFFF" : state.strokeStyle;
-};
+// Modal Management
+openModalBtn.addEventListener('click', () => {
+  modal.classList.remove('hidden');
+  modal.setAttribute('aria-hidden', 'false');
+  closeModalBtn.focus();
+});
 
-// Save the current canvas state to history
-const saveToHistory = () => {
-  const whiteboard = document.getElementById("whiteboard");
-  if (state.history.length >= state.maxHistory) state.history.shift();
-  state.history.push(whiteboard.toDataURL());
-};
+closeModalBtn.addEventListener('click', () => {
+  modal.classList.add('hidden');
+  modal.setAttribute('aria-hidden', 'true');
+  openModalBtn.focus();
+});
 
-// Resize canvas dynamically
-const addResizeListener = () => {
-  const whiteboard = document.getElementById("whiteboard");
-  window.addEventListener("resize", () => {
-    const oldData = whiteboard.toDataURL();
-    whiteboard.width = whiteboard.offsetWidth;
-    whiteboard.height = whiteboard.offsetHeight;
-    updateContextStyle();
+// Change Color
+colorPicker.addEventListener('input', (event) => {
+  currentColor = event.target.value;
+});
 
-    // Restore previous drawing
-    const img = new Image();
-    img.onload = () => state.ctx.drawImage(img, 0, 0);
-    img.src = oldData;
-  });
-};
+// Animation Effect
+function animate() {
+  context.save();
+  context.globalAlpha = 0.05;
+  context.fillStyle = currentColor;
+  context.fillRect(0, 0, canvas.width, canvas.height);
+  context.restore();
 
-// Modal controls for additional tools
-const attachModalControls = () => {
-  const moreToolButton = document.getElementById("more-tool");
-  const closeModalButton = document.getElementById("close-modal");
-  const modal = document.getElementById("more-modal");
+  animationFrameId = requestAnimationFrame(animate);
+}
 
-  // Show the modal when the "More" button is clicked
-  moreToolButton.addEventListener("click", () => {
-    modal.classList.remove("hidden");
-    modal.setAttribute("aria-hidden", "false");
-  });
+startAnimationBtn.addEventListener('click', () => {
+  if (!animationFrameId) animate();
+});
 
-  // Close the modal when the close button is clicked
-  closeModalButton.addEventListener("click", () => {
-    modal.classList.add("hidden");
-    modal.setAttribute("aria-hidden", "true");
-  });
+stopAnimationBtn.addEventListener('click', () => {
+  if (animationFrameId) {
+    cancelAnimationFrame(animationFrameId);
+    animationFrameId = null;
+    alert("Animation stopped.");
+  }
+});
 
-  // Optional: Close the modal if the user clicks outside of it
-  window.addEventListener("click", (e) => {
-    if (e.target === modal) {
-      modal.classList.add("hidden");
-      modal.setAttribute("aria-hidden", "true");
-    }
-  });
-};
+// Magic Wand Effect
+function magicWandEffect() {
+  const gradient = context.createRadialGradient(
+    canvas.width / 2, canvas.height / 2, 50,
+    canvas.width / 2, canvas.height / 2, 300
+  );
+  gradient.addColorStop(0, 'rgba(255, 0, 255, 0.8)');
+  gradient.addColorStop(0.5, 'rgba(0, 255, 255, 0.5)');
+  gradient.addColorStop(1, 'rgba(255, 255, 0, 0.3)');
 
-// Attach listeners for additional tools (e.g., Magic Wand, Color Picker, etc.)
-const attachMoreToolsListeners = () => {
-  // Magic Wand Tool
-  document.getElementById("magic-wand-tool").addEventListener("click", () => {
-    alert("Magic Wand Tool activated!");
-  });
+  context.fillStyle = gradient;
+  context.fillRect(0, 0, canvas.width, canvas.height);
 
-  // Color Picker Tool
-  document.getElementById("color-picker").addEventListener("input", (e) => {
-    state.strokeStyle = e.target.value;
-    if (!state.eraserMode) {
-      updateContextStyle();
-    }
-  });
+  alert("Magic Wand effect applied!");
+}
 
-  // Animation Start Button
-  document.getElementById("animation").addEventListener("click", () => {
-    alert("Animation started!");
-  });
+magicWandBtn.addEventListener('click', magicWandEffect);
 
-  // Animation Stop Button
-  document.getElementById("stop-animation").addEventListener("click", () => {
-    alert("Animation stopped!");
-  });
-};
+// Event Listeners for Canvas
+canvas.addEventListener('mousedown', startDrawing);
+canvas.addEventListener('mousemove', draw);
+canvas.addEventListener('mouseup', stopDrawing);
+canvas.addEventListener('mouseout', stopDrawing);
 
-// Initialize the application
-window.onload = () => {
-  initializeWhiteboard();
-};
+// Touch Event Listeners for Canvas
+canvas.addEventListener('touchstart', startDrawing);
+canvas.addEventListener('touchmove', draw);
+canvas.addEventListener('touchend', stopDrawing);
+canvas.addEventListener('touchcancel', stopDrawing);
+
+// Utility to clear the whiteboard
+function clearCanvas() {
+  context.clearRect(0, 0, canvas.width, canvas.height);
+}
+
+// Dark Theme Toggle
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'd') {
+    document.body.classList.toggle('dark-theme');
+  }
+});
