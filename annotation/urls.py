@@ -1,9 +1,9 @@
 from django.urls import path
-from .views import home, save_annotation, get_projects, get_images
+from .views import save_drawing, share_drawing,index,trace_view
 
 urlpatterns = [
-    path('', home, name='annotation_tool'),
-    path('annotation/', save_annotation, name='save_annotation'),  # Fixed URL for saving annotations
-    path('project/', get_projects, name='projects'),
-    path('image/<int:project_id>/', get_images, name='images'),
+    path('api/save/', save_drawing, name='save_drawing'),
+    path('api/share/', share_drawing, name='share_drawing'),
+    path('index', index, name='index'),
+    path('', trace_view, name='trace'),
 ]

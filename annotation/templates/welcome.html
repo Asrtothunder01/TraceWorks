@@ -1,10 +1,11 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Welcome to TraceWork </title>
-  <link rel="stylesheet" href="welcome.css">
+  <title>Welcome to TraceWork</title>
+  <link rel="stylesheet" href="{% static 'welcome.css' %}">
 </head>
 <body>
   <header>
@@ -20,7 +21,7 @@
     
     <section class="call-to-action">
       <p>Ready to dive in? Click the button below to start drawing on our interactive canvas!</p>
-      <a href="labelbox.html" class="btn">Go to Drawing Page</a>
+      <a href="{% url 'trace' %}" class="btn">Go to Drawing Page</a>
     </section>
   </main>
 
@@ -28,6 +29,6 @@
     <p>&copy; 2024 TraceWork | Designed by Olorunfemi. All rights reserved.</p>
   </footer>
   
-  <script src="welcome.js"></script>
+  <script src="{% static 'welcome.js' %}"></script>
 </body>
 </html>

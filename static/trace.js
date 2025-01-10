@@ -4,7 +4,24 @@ const CONSTANTS = {
   ERASER_WIDTH: 20,
   ANIMATION_INTERVAL: 100,
   SPARKLE_COUNT: 50,
-  ONBOARDING_TIMEOUT: 5000
+  ONBOARDING_TIMEOUT: 5000,
+  MAX_HISTORY: 50,
+  DEBOUNCE_DELAY: 250,
+  MIN_LINE_WIDTH: 1,
+  MAX_LINE_WIDTH: 50
+};
+
+// Utility Functions
+const debounce = (func, wait) => {
+  let timeout;
+  return function executedFunction(...args) {
+    const later = () => {
+      clearTimeout(timeout);
+      func(...args);
+    };
+    clearTimeout(timeout);
+    timeout = setTimeout(later, wait);
+  };
 };
 
 // State management
@@ -16,136 +33,209 @@ const state = {
   currentTool: 'pen',
   animationInterval: null,
   currentColor: '#000000',
+  currentLineWidth: CONSTANTS.DEFAULT_LINE_WIDTH,
   history: [],
   currentStep: -1,
-  maxHistory: 50
+  maxHistory: CONSTANTS.MAX_HISTORY,
+  isAnimating: false
 };
 
-// Canvas initialization
+// Canvas Operations
 const initializeCanvas = () => {
-  const whiteboard = document.getElementById('whiteboard');
-  if (!whiteboard) {
-    console.error('Whiteboard element is not available.');
-    return;
+  try {
+    const whiteboard = document.getElementById('whiteboard');
+    if (!whiteboard) {
+      throw new Error('Canvas element not found');
+    }
+
+    // Check for canvas support
+    if (!whiteboard.getContext) {
+      throw new Error('Canvas not supported in this browser');
+    }
+
+    whiteboard.width = whiteboard.offsetWidth;
+    whiteboard.height = whiteboard.offsetHeight;
+
+    state.ctx = whiteboard.getContext('2d', { willReadFrequently: true });
+    updateContextStyle();
+    
+    return true;
+  } catch (error) {
+    console.error('Failed to initialize canvas:', error);
+    showError('Failed to initialize drawing board. Please refresh the page.');
+    return false;
   }
-
-  whiteboard.width = whiteboard.offsetWidth;
-  whiteboard.height = whiteboard.offsetHeight;
-  state.ctx = whiteboard.getContext('2d');
-
-  // Default settings
-  state.ctx.strokeStyle = state.currentColor;
-  state.ctx.lineWidth = CONSTANTS.DEFAULT_LINE_WIDTH;
-  state.ctx.lineCap = 'round';
 };
 
-// Drawing functions
+const updateContextStyle = () => {
+  if (!state.ctx) return;
+  state.ctx.strokeStyle = state.currentColor;
+  state.ctx.lineWidth = state.currentLineWidth;
+  state.ctx.lineCap = 'round';
+  state.ctx.lineJoin = 'round';
+};
+
+// State Management
+const saveState = debounce(() => {
+  try {
+    if (!state.ctx) return;
+    
+    const imageData = state.ctx.getImageData(0, 0, state.ctx.canvas.width, state.ctx.canvas.height);
+    
+    // Manage history size
+    if (state.history.length >= state.maxHistory) {
+      state.history.shift();
+      state.currentStep--;
+    }
+    
+    // Remove any states after current step if we're in middle of history
+    state.history = state.history.slice(0, state.currentStep + 1);
+    state.history.push(imageData);
+    state.currentStep = state.history.length - 1;
+  } catch (error) {
+    console.error('Failed to save state:', error);
+    showError('Failed to save your latest changes');
+  }
+}, CONSTANTS.DEBOUNCE_DELAY);
+
+const loadState = () => {
+  try {
+    if (!state.ctx || state.currentStep < 0) return;
+    state.ctx.putImageData(state.history[state.currentStep], 0, 0);
+  } catch (error) {
+    console.error('Failed to load state:', error);
+    showError('Failed to restore previous state');
+  }
+};
+
+// Drawing Operations
 const startDrawing = (x, y) => {
   state.isDrawing = true;
   [state.lastX, state.lastY] = [x, y];
 };
 
-const drawOrErase = (x, y) => {
+const draw = (x, y) => {
   if (!state.isDrawing) return;
-
+  
   state.ctx.beginPath();
   state.ctx.moveTo(state.lastX, state.lastY);
   state.ctx.lineTo(x, y);
   state.ctx.stroke();
+  
   [state.lastX, state.lastY] = [x, y];
 };
 
 const stopDrawing = () => {
   if (state.isDrawing) {
     state.isDrawing = false;
-    state.ctx.beginPath();
     saveState();
   }
 };
 
-// History management
-const saveState = () => {
-  const imageData = state.ctx.getImageData(0, 0, state.ctx.canvas.width, state.ctx.canvas.height);
-  state.currentStep++;
-  state.history.splice(state.currentStep);
-  state.history.push(imageData);
-  
-  if (state.history.length > state.maxHistory) {
-    state.history.shift();
-    state.currentStep--;
+// Tool Operations
+const switchTool = (tool) => {
+  state.currentTool = tool;
+  state.ctx.globalCompositeOperation = tool === 'eraser' ? 'destination-out' : 'source-over';
+  state.currentLineWidth = tool === 'eraser' ? CONSTANTS.ERASER_WIDTH : CONSTANTS.DEFAULT_LINE_WIDTH;
+  updateContextStyle();
+};
+
+const setColor = (color) => {
+  state.currentColor = color;
+  if (state.currentTool !== 'eraser') {
+    updateContextStyle();
   }
 };
 
+const setLineWidth = (width) => {
+  state.currentLineWidth = Math.min(Math.max(width, CONSTANTS.MIN_LINE_WIDTH), CONSTANTS.MAX_LINE_WIDTH);
+  updateContextStyle();
+};
+
+// Undo/Redo Operations
 const undo = () => {
   if (state.currentStep > 0) {
     state.currentStep--;
-    state.ctx.putImageData(state.history[state.currentStep], 0, 0);
+    loadState();
   }
 };
 
 const redo = () => {
   if (state.currentStep < state.history.length - 1) {
     state.currentStep++;
-    state.ctx.putImageData(state.history[state.currentStep], 0, 0);
+    loadState();
   }
 };
 
-// Tool management
-const switchTool = (tool) => {
-  const penTool = document.getElementById('pen-tool');
-  const eraserTool = document.getElementById('eraser-tool');
-  state.currentTool = tool;
-
-  if (tool === 'pen') {
-    state.ctx.globalCompositeOperation = 'source-over';
-    state.ctx.strokeStyle = state.currentColor;
-    state.ctx.lineWidth = CONSTANTS.DEFAULT_LINE_WIDTH;
-    penTool?.classList.add('active');
-    eraserTool?.classList.remove('active');
-  } else if (tool === 'eraser') {
-    state.ctx.globalCompositeOperation = 'destination-out';
-    state.ctx.lineWidth = CONSTANTS.ERASER_WIDTH;
-    eraserTool?.classList.add('active');
-    penTool?.classList.remove('active');
+// Save and Share Operations
+const saveDrawing = () => {
+  try {
+    const whiteboard = document.getElementById('whiteboard');
+    const drawingData = whiteboard.toDataURL();
+    localStorage.setItem('drawing', drawingData);
+    showSuccess('Drawing saved successfully!');
+  } catch (error) {
+    console.error('Failed to save drawing:', error);
+    showError('Failed to save drawing');
   }
 };
 
-// Canvas utilities
-const resizeCanvas = () => {
+const shareDrawing = async () => {
+  try {
+    const whiteboard = document.getElementById('whiteboard');
+    const drawingData = whiteboard.toDataURL();
+
+    const response = await fetch('/api/share/', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+      },
+      body: JSON.stringify({ drawing: drawingData })
+    });
+
+    const data = await response.json();
+    if (data.share_url) {
+      showSuccess(`Drawing shared! URL: ${data.share_url}`);
+    } else {
+      throw new Error('No share URL received');
+    }
+  } catch (error) {
+    console.error('Failed to share drawing:', error);
+    showError('Failed to share drawing');
+  }
+};
+
+// Window Resize Handling
+const handleResize = debounce(() => {
   const whiteboard = document.getElementById('whiteboard');
-  const savedImage = state.ctx.getImageData(0, 0, whiteboard.width, whiteboard.height);
-  initializeCanvas();
-  state.ctx.putImageData(savedImage, 0, 0);
-};
+  const tempCanvas = document.createElement('canvas');
+  const tempCtx = tempCanvas.getContext('2d');
+  
+  // Save current drawing
+  tempCanvas.width = whiteboard.width;
+  tempCanvas.height = whiteboard.height;
+  tempCtx.drawImage(whiteboard, 0, 0);
+  
+  // Resize canvas
+  whiteboard.width = whiteboard.offsetWidth;
+  whiteboard.height = whiteboard.offsetHeight;
+  
+  // Restore drawing
+  state.ctx.drawImage(tempCanvas, 0, 0);
+}, CONSTANTS.DEBOUNCE_DELAY);
 
-const clearCanvas = () => {
-  state.ctx.clearRect(0, 0, state.ctx.canvas.width, state.ctx.canvas.height);
-  saveState();
-};
-
-// Color management
-const changeColor = (event) => {
-  state.currentColor = event.target.value;
-  if (state.currentTool === 'pen') {
-    state.ctx.strokeStyle = state.currentColor;
-  }
-};
-
-// Animation features
+// Animation Effects
 const startAnimation = () => {
-  const whiteboard = document.getElementById('whiteboard');
-  stopAnimation();
+  if (state.isAnimating) return;
+  
+  state.isAnimating = true;
+  let hue = 0;
   
   state.animationInterval = setInterval(() => {
-    const x1 = Math.random() * whiteboard.width;
-    const y1 = Math.random() * whiteboard.height;
-    const x2 = Math.random() * whiteboard.width;
-    const y2 = Math.random() * whiteboard.height;
-
-    state.ctx.beginPath();
-    state.ctx.moveTo(x1, y1);
-    state.ctx.lineTo(x2, y2);
-    state.ctx.stroke();
+    hue = (hue + 1) % 360;
+    state.currentColor = `hsl(${hue}, 100%, 50%)`;
+    updateContextStyle();
   }, CONSTANTS.ANIMATION_INTERVAL);
 };
 
@@ -153,196 +243,125 @@ const stopAnimation = () => {
   if (state.animationInterval) {
     clearInterval(state.animationInterval);
     state.animationInterval = null;
-    saveState();
   }
+  state.isAnimating = false;
+  state.currentColor = document.getElementById('color-picker').value;
+  updateContextStyle();
 };
 
-// Modal management
-const toggleMoreModal = () => {
-  const moreModal = document.getElementById('more-modal');
-  const closeModalButton = document.getElementById('close-modal');
-
-  if (moreModal) {
-    moreModal.classList.toggle('hidden');
-
-    const closeModal = () => {
-      moreModal.classList.add('hidden');
-      removeEventListeners();
-    };
-
-    const handleOutsideClick = (e) => {
-      if (e.target === moreModal) {
-        closeModal();
-      }
-    };
-
-    const removeEventListeners = () => {
-      moreModal.removeEventListener('click', handleOutsideClick);
-      closeModalButton?.removeEventListener('click', closeModal);
-    };
-
-    moreModal.addEventListener('click', handleOutsideClick);
-    closeModalButton?.addEventListener('click', closeModal);
-  }
+// UI Feedback
+const showError = (message) => {
+  // Implement your preferred error notification system
+  alert(message);
 };
 
-// Special effects
-const createSparkles = () => {
+const showSuccess = (message) => {
+  // Implement your preferred success notification system
+  alert(message);
+};
+
+// Event Handlers
+const setupEventListeners = () => {
   const whiteboard = document.getElementById('whiteboard');
-  const particles = Array.from({ length: CONSTANTS.SPARKLE_COUNT }, () => ({
-    x: Math.random() * whiteboard.width,
-    y: Math.random() * whiteboard.height,
-    size: Math.random() * 5 + 2,
-    speedX: Math.random() * 2 - 1,
-    speedY: Math.random() * 2 - 1,
-    opacity: 1
-  }));
-
-  const animateSparkles = () => {
-    state.ctx.clearRect(0, 0, whiteboard.width, whiteboard.height);
-    
-    particles.forEach((particle, index) => {
-      state.ctx.beginPath();
-      state.ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
-      state.ctx.fillStyle = `rgba(255, 215, 0, ${particle.opacity})`;
-      state.ctx.fill();
-
-      particle.x += particle.speedX;
-      particle.y += particle.speedY;
-      particle.opacity -= 0.02;
-
-      if (particle.opacity <= 0) particles.splice(index, 1);
-    });
-
-    if (particles.length > 0) {
-      requestAnimationFrame(animateSparkles);
-    } else {
-      saveState();
-    }
-  };
-
-  animateSparkles();
-};
-
-// Onboarding
-const showOnboarding = () => {
-  const magicWandButton = document.getElementById('magic-wand-tool');
-  if (!magicWandButton) return;
-
-  const overlay = document.createElement('div');
-  overlay.id = 'onboarding-overlay';
-
-  const arrow = document.createElement('div');
-  arrow.id = 'onboarding-arrow';
-  arrow.innerText = 'Tap here to clear the canvas with the Magic Wand!';
-
-  document.body.appendChild(overlay);
-  document.body.appendChild(arrow);
-
-  const rect = magicWandButton.getBoundingClientRect();
-  arrow.style.top = `${rect.top - 50}px`;
-  arrow.style.left = `${rect.left + rect.width / 2 - arrow.offsetWidth / 2}px`;
-
-  magicWandButton.style.boxShadow = '0px 0px 15px 3px rgba(0, 255, 0, 0.7)';
-  magicWandButton.style.transition = 'box-shadow 0.3s ease-in-out';
-
-  const hideOnboarding = () => {
-    document.getElementById('onboarding-overlay')?.remove();
-    document.getElementById('onboarding-arrow')?.remove();
-    magicWandButton.style.boxShadow = '';
-    localStorage.setItem('visited', true);
-  };
-
-  overlay.addEventListener('click', hideOnboarding);
-  magicWandButton.addEventListener('click', hideOnboarding);
-  setTimeout(hideOnboarding, CONSTANTS.ONBOARDING_TIMEOUT);
-};
-
-// Event listeners
-const addEventListeners = () => {
-  const whiteboard = document.getElementById('whiteboard');
-  const penTool = document.getElementById('pen-tool');
-  const eraserTool = document.getElementById('eraser-tool');
-  const magicWandTool = document.getElementById('magic-wand-tool');
-  const colorPicker = document.getElementById('color-picker');
-  const startAnimationButton = document.getElementById('animation');
-  const stopAnimationButton = document.getElementById('stop-animation');
-  const moreTool = document.getElementById('more-tool');
-
-  // Drawing events
-  const handleDrawStart = (e) => {
-    const { offsetX, offsetY } = e.type.includes('mouse') 
-      ? e 
-      : { 
-          offsetX: e.touches[0].clientX - whiteboard.getBoundingClientRect().left,
-          offsetY: e.touches[0].clientY - whiteboard.getBoundingClientRect().top
-        };
-    startDrawing(offsetX, offsetY);
-  };
-
-  const handleDraw = (e) => {
-    const { offsetX, offsetY } = e.type.includes('mouse')
-      ? e
-      : {
-          offsetX: e.touches[0].clientX - whiteboard.getBoundingClientRect().left,
-          offsetY: e.touches[0].clientY - whiteboard.getBoundingClientRect().top
-        };
-    drawOrErase(offsetX, offsetY);
-    if (e.type === 'touchmove') e.preventDefault();
-  };
-
+  
   // Mouse events
-  whiteboard?.addEventListener('mousedown', handleDrawStart);
-  whiteboard?.addEventListener('mousemove', handleDraw);
-  whiteboard?.addEventListener('mouseup', stopDrawing);
-  whiteboard?.addEventListener('mouseout', stopDrawing);
-
-  // Touch events
-  whiteboard?.addEventListener('touchstart', handleDrawStart);
-  whiteboard?.addEventListener('touchmove', handleDraw);
-  whiteboard?.addEventListener('touchend', stopDrawing);
-  whiteboard?.addEventListener('touchcancel', stopDrawing);
-
-  // Tool events
-  penTool?.addEventListener('click', () => switchTool('pen'));
-  eraserTool?.addEventListener('click', () => switchTool('eraser'));
-  magicWandTool?.addEventListener('click', () => {
-    clearCanvas();
-    createSparkles();
+  whiteboard.addEventListener('mousedown', (e) => {
+    startDrawing(e.offsetX, e.offsetY);
   });
-  colorPicker?.addEventListener('input', changeColor);
-  startAnimationButton?.addEventListener('click', startAnimation);
-  stopAnimationButton?.addEventListener('click', stopAnimation);
-  moreTool?.addEventListener('click', toggleMoreModal);
-
-  // Window events
-  window.addEventListener('resize', resizeCanvas);
-
+  
+  whiteboard.addEventListener('mousemove', (e) => {
+    draw(e.offsetX, e.offsetY);
+  });
+  
+  whiteboard.addEventListener('mouseup', stopDrawing);
+  whiteboard.addEventListener('mouseleave', stopDrawing);
+  
+  // Touch events
+  whiteboard.addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    const touch = e.touches[0];
+    const rect = whiteboard.getBoundingClientRect();
+    startDrawing(touch.clientX - rect.left, touch.clientY - rect.top);
+  });
+  
+  whiteboard.addEventListener('touchmove', (e) => {
+    e.preventDefault();
+    const touch = e.touches[0];
+    const rect = whiteboard.getBoundingClientRect();
+    draw(touch.clientX - rect.left, touch.clientY - rect.top);
+  });
+  
+  whiteboard.addEventListener('touchend', stopDrawing);
+  
+  // Tool buttons
+  document.getElementById('pen-tool').addEventListener('click', () => switchTool('pen'));
+  document.getElementById('eraser-tool').addEventListener('click', () => switchTool('eraser'));
+  document.getElementById('save-tool').addEventListener('click', saveDrawing);
+  document.getElementById('share-tool').addEventListener('click', shareDrawing);
+  
+  // Color picker
+  const colorPicker = document.getElementById('color-picker');
+  colorPicker.addEventListener('change', (e) => setColor(e.target.value));
+  colorPicker.addEventListener('input', (e) => setColor(e.target.value));
+  
+  // Animation controls
+  document.getElementById('animation').addEventListener('click', startAnimation);
+  document.getElementById('stop-animation').addEventListener('click', stopAnimation);
+  
+  // Modal controls
+  const moreBtn = document.getElementById('more-tool');
+  const moreModal = document.getElementById('more-modal');
+  const closeModal = document.getElementById('close-modal');
+  
+  moreBtn.addEventListener('click', () => {
+    moreModal.classList.remove('hidden');
+  });
+  
+  closeModal.addEventListener('click', () => {
+    moreModal.classList.add('hidden');
+  });
+  
   // Keyboard shortcuts
   document.addEventListener('keydown', (e) => {
     if (e.ctrlKey || e.metaKey) {
-      if (e.key === 'z') {
-        e.preventDefault();
-        if (e.shiftKey) {
-          redo();
-        } else {
-          undo();
-        }
+      switch (e.key.toLowerCase()) {
+        case 'z':
+          e.preventDefault();
+          if (e.shiftKey) {
+            redo();
+          } else {
+            undo();
+          }
+          break;
+        case 's':
+          e.preventDefault();
+          saveDrawing();
+          break;
       }
     }
   });
+  
+  // Window resize
+  window.addEventListener('resize', handleResize);
 };
 
-// Initialize application
+// Initialization
 const initialize = () => {
-  initializeCanvas();
-  addEventListeners();
-  switchTool('pen');
+  if (!initializeCanvas()) return;
+  setupEventListeners();
   saveState(); // Save initial blank state
-  if (!localStorage.getItem('visited')) {
-    showOnboarding();
+  
+  // Load saved drawing if exists
+  const savedDrawing = localStorage.getItem('drawing');
+  if (savedDrawing) {
+    const img = new Image();
+    img.onload = () => {
+      state.ctx.drawImage(img, 0, 0);
+      saveState();
+    };
+    img.src = savedDrawing;
   }
 };
 
-// Start the application
-initialize();
+// Start the application when the window loads
+window.onload = initialize;

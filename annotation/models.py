@@ -1,22 +1,12 @@
 from django.db import models
-class  Project(models.Model):
-    name =  models.CharField(max_length = 255)
 
-    description = models.TextField()
 
-    created_at = models.DateTimeField(auto_now_add = True)
+class Drawing(models.Model):
+    user = models.CharField(max_length=100)
+    tool = models.CharField(max_length=100)
+    color = models.CharField(max_length=7, default="#000000")  # Hex color code
+    stroke = models.PositiveIntegerField(default=2)
+    coordinates = models.JSONField()  # JSON for drawing coordinates
 
-class Image(models.Model):
-    
-    project = models.ForeignKey(Project,on_delete= models.CASCADE,related_name= 'images')
-
-    image_file = models.ImageField(upload_to= 'images/')
-
-    created_at = models.DateTimeField(auto_now_add = True)
-
-class Annotation(models.Model):
-    project = models.ForeignKey(Project,on_delete=models.CASCADE)
-
-    Annotation_data = models.JSONField()
-
-    created_at =models.DateTimeField(auto_now_add= True)
+    def __str__(self):
+        return f"Drawing by {self.user}"

@@ -1,36 +1,49 @@
-from django.shortcuts import render, get_object_or_404
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from .models import Annotation, Project, Image
-import json
+from django.core.files.base import ContentFile
+import base64
+import os
+import uuid
 
-# Create your views here.
-def home(request):
-    return render(request, 'label.html')
-
-def get_images(request, project_id):
-    images = Image.objects.filter(project_id=project_id).values('id', 'image_file')
-    return JsonResponse(list(images), safe=False)
-
-def get_projects(request):
-    projects = Project.objects.all().values('id', 'name', 'description')
-    return JsonResponse(list(projects), safe=False)
-
+from django.shortcuts import render
+# Save drawing API
 @csrf_exempt
-def save_annotation(request):
+def save_drawing(request):
     if request.method == 'POST':
         try:
-            data = json.loads(request.body)
-            if 'image_id' not in data or 'annotation_data' not in data:
-                return JsonResponse({'error': 'Invalid data payload'}, status=400)
+            data = request.POST.get('drawing')  # Drawing data in base64
+            format, imgstr = data.split(';base64,')
+            ext = format.split('/')[-1]
+            filename = f"{uuid.uuid4()}.{ext}"
+            filepath = os.path.join('media/drawings', filename)
 
-            image = get_object_or_404(Image, id=data['image_id'])
-            annotation = Annotation.objects.create(image=image, data=data['annotation_data'])
-            return JsonResponse({'message': "Annotation Saved Successfully!"}, status=201)
-
-        except json.JSONDecodeError:
-            return JsonResponse({'error': 'Invalid JSON format'}, status=400)
+            with open(filepath, 'wb') as f:
+                f.write(base64.b64decode(imgstr))
+            
+            return JsonResponse({'message': 'Drawing saved successfully!', 'file_path': filepath})
         except Exception as e:
-            return JsonResponse({'error': str(e)}, status=500)
-
+            return JsonResponse({'error': str(e)}, status=400)
     return JsonResponse({'error': 'Invalid request method'}, status=405)
+
+# Share drawing API
+@csrf_exempt
+def share_drawing(request):
+    if request.method == 'POST':
+        try:
+            import random
+
+            # Simulate generating a shareable URL
+            data = request.POST.get('drawing')
+            share_url = f"https://myapp.com/share/{random.randint(1000, 9999)}"
+            return JsonResponse({'message': 'Shared successfully!', 'share_url': share_url})
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=400)
+    return JsonResponse({'error': 'Invalid request method'}, status=405)
+
+
+
+def index(request):
+    return render(request, 'welcome.html')
+
+def trace_view(request):
+    return render(request, 'trace.html')  
