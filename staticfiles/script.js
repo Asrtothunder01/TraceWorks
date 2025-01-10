@@ -204,7 +204,7 @@ fetch('/api/image/1/')
 
 const annotationData = { image_id: 1, annotation_data: { shapes: 'Example data' } };
 
-fetch('/api/annotation/', {
+fetch('/api/annotation/', {  
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify(annotationData),

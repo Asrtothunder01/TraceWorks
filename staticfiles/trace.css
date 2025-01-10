@@ -1,0 +1,264 @@
+/* General Styling */
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background-color: #f5f5f5;
+}
+
+body.dark-theme {
+  background-color: #121212;
+  color: #ffffff;
+}
+
+.dark-theme a.btn {
+  background-color: #ffffff;
+  color: #121212;
+}
+
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+/* Whiteboard Styling */
+.whiteboard {
+  flex: 1;
+  background-image: radial-gradient(#ccc 1px, transparent 1px);
+  background-size: 20px 20px;
+  border: 2px solid #ccc;
+  margin: 10px;
+  border-radius: 10px;
+  position: relative;
+  cursor: crosshair;
+}
+
+/* Toolbar Styling */
+.toolbar {
+  display: flex;
+  justify-content: space-around;
+  background: #ffffff;
+  border-top: 1px solid #ccc;
+  padding: 10px 0;
+  box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.tool-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  border: none;
+  background: none;
+  font-size: 12px;
+  color: #007bff;
+  cursor: pointer;
+  outline: none;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.tool-btn img {
+  width: 30px;
+  height: 30px;
+  margin-bottom: 5px;
+  transition: transform 0.3s;
+}
+
+.tool-btn:hover img {
+  transform: scale(1.1);
+}
+
+.tool-btn.active {
+  border: 2px solid #2575fc;
+  box-shadow: 0 0 10px #2575fc;
+}
+
+/* Animations */
+#pen-tool img {
+  animation: dance 1s infinite alternate ease-in-out;
+}
+
+#eraser-tool img {
+  animation: rotate 1s infinite linear;
+}
+
+@keyframes dance {
+  0% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+
+@keyframes rotate {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* Modal Styles */
+#more-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: #333333; /* Updated background color */
+  border: 2px solid #ccc;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+  padding: 20px;
+  width: 85%;
+  max-width: 400px;
+  color: #ffffff;
+  z-index: 1000;
+}
+
+.modal-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.tools-container {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 15px;
+  width: 100%;
+}
+
+.tool-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  border-radius: 10px;
+  padding: 10px;
+  cursor: pointer;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+}
+
+.tool-btn:hover {
+  transform: scale(1.1);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+}
+
+.tool-btn img {
+  width: 40px;
+  height: 40px;
+  margin-bottom: 5px;
+  filter: drop-shadow(0 0 3px white);
+  object-fit: contain;
+}
+
+.tool-btn span {
+  font-family: 'Poppins', sans-serif;
+  font-size: 0.9rem;
+  color: white;
+}
+
+/* Adjusting Color Picker */
+.color-picker-label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.color-picker-label input {
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+}
+
+.color-picker-label span {
+  margin-top: 8px;
+  font-size: 0.9rem;
+  color: white;
+}
+
+/* Close Button */
+.close-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  font-size: 1.5rem;
+  color: white;
+  cursor: pointer;
+  transition: transform 0.3s, color 0.3s;
+}
+
+.close-btn:hover {
+  transform: scale(1.2);
+  color: #ff6b6b;
+}
+
+/* Hidden Elements */
+.hidden {
+  display: none;
+}
+
+.sparkle {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  background-color: rgba(255, 215, 0, 0.8); /* Gold color */
+  border-radius: 50%;
+  box-shadow: 0 0 10px rgba(255, 215, 0, 0.8);
+  animation: sparkle-animation 1s ease-out;
+}
+
+@keyframes sparkle-animation {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(2);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(0);
+    opacity: 0;
+  }
+}
+
+#onboarding-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5); /* Dim background */
+  z-index: 1000;
+}
+
+#onboarding-arrow {
+  position: absolute;
+  padding: 10px 20px;
+  background: #fff;
+  color: #000;
+  border-radius: 5px;
+  font-size: 14px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  z-index: 1001;
+  animation: bounce 1s infinite;
+}
+
+@keyframes bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+  }
