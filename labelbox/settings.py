@@ -29,6 +29,7 @@ ALLOWED_HOSTS = [
     'localhost',
     '127.0.0.1',
     'traceworks-6.onrender.com',  
+    'traceworks.onrender.com',
 ]
 
 MEDIA_URL = '/media/'
