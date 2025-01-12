@@ -1,4 +1,4 @@
-// DOM Elements
+// DOM Element
 const canvas = document.getElementById('whiteboard');
 const context = canvas.getContext('2d');
 const toolbar = document.querySelector('.toolbar');
